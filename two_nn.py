@@ -34,11 +34,7 @@ def crawl(page):
 
     soup = BeautifulSoup(res.text, "html5lib")
     articles_wrapper = soup.select(".news4plus article ol li")
-    i = 0
     for article in articles_wrapper:
-        i += 1
-        if i == 2:
-            break
         pubtime_dom = article.find("time")
         pubdatetime = pubtime_dom["datetime"]
         pubdate = pubdatetime.split(" ")[0]
@@ -88,21 +84,29 @@ def get_5ch_content(url):
 
     soup = BeautifulSoup(res.text, "html5lib")
 
-    postes = soup.select(".post .message")
-    if not postes:
+    if _is_dl_dd_structure(soup):
         postes = soup.select("dl.thread dd")
+    else:
+        postes = soup.select(".post .message")
 
-    postes_text = [post.text for post in postes]
-
-    if not postes_text:
+    if not postes:
         logger.warning(f"Can't get posts from {url}")
         return None, None
 
+    postes_text = [post.text for post in postes]
     content = postes_text[0]
     responses = postes_text[1:] if len(postes_text) > 1 else []
 
     return content, responses
 
+
+def _is_dl_dd_structure(soup):
+    '''
+    https://daily.5ch.net/test/read.cgi/newsplus/1490788389/
+    https://hayabusa8.5ch.net/test/read.cgi/mnewsplus/1490290133/
+    https://hayabusa3.5ch.net/test/read.cgi/mnewsplus/1413290238/
+    '''
+    return soup.find("body").get("bgcolor") == "#efefef"
 
 if __name__ == "__main__":
     logger.info("Start cawling")
